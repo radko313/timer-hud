@@ -45,7 +45,9 @@
 
     var interval = setInterval(function() {
       current--;
-      timerEl.textContent = current;
+      if (current > 0) {
+        timerEl.textContent = current;
+      }
 
       // Pulse animation on each tick
       timerEl.classList.remove('tick');
