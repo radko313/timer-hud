@@ -43,26 +43,12 @@
     var total = 15;
     var current = total;
 
-    var interval = setInterval(function() {
+    function tick() {
       current--;
-      if (current > 0) {
-        timerEl.textContent = current;
-      }
-
-      // Pulse animation on each tick
-      timerEl.classList.remove('tick');
-      void timerEl.offsetWidth; // force reflow to restart animation
-      timerEl.classList.add('tick');
-
-      // Go red + faster pulse in last 5 seconds
-      if (current <= 5 && current > 0) {
-        timerEl.style.color = '#ff3333';
-        timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 20px #ff3333, 0 0 40px #cc0000, 0 0 60px #990000';
-      }
-
       if (current <= 0) {
         clearInterval(interval);
         timerEl.textContent = 'START';
+        timerEl.style.fontSize = '40px';
         timerEl.style.color = '#00ff88';
         timerEl.style.textShadow = '0 0 7px #00ff88, 0 0 20px #00ff88, 0 0 40px #00cc66, 0 0 60px #009944';
         timerEl.classList.remove('tick');
@@ -75,8 +61,24 @@
             TaskTargetState: 'SetActiveToCompleted'
           }));
         }, 1500);
+        return;
       }
-    }, 1000);
+
+      timerEl.textContent = current;
+
+      // Pulse animation on each tick
+      timerEl.classList.remove('tick');
+      void timerEl.offsetWidth;
+      timerEl.classList.add('tick');
+
+      // Go red in last 5 seconds
+      if (current <= 5) {
+        timerEl.style.color = '#ff3333';
+        timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 20px #ff3333, 0 0 40px #cc0000, 0 0 60px #990000';
+      }
+    }
+
+    var interval = setInterval(tick, 1000);
   </script>
 </body>
 </html>
