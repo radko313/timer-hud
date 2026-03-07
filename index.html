@@ -14,11 +14,23 @@
     font-family: 'Arial Black', Arial, sans-serif;
     font-size: 48px;
     font-weight: 900;
-    color: #ffffff;
-    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    color: #00ff88;
+    text-shadow:
+      0 0 7px #00ff88,
+      0 0 20px #00ff88,
+      0 0 40px #00cc66,
+      0 0 60px #009944;
     text-align: center;
     line-height: 1;
     transition: opacity 0.5s;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .tick {
+    animation: pulse 0.3s ease-out;
   }
 </style>
 </head>
@@ -34,6 +46,18 @@
     var interval = setInterval(function() {
       current--;
       timerEl.textContent = current;
+
+      // Pulse animation on each tick
+      timerEl.classList.remove('tick');
+      void timerEl.offsetWidth; // force reflow to restart animation
+      timerEl.classList.add('tick');
+
+      // Go red + faster pulse in last 5 seconds
+      if (current <= 5 && current > 0) {
+        timerEl.style.color = '#ff3333';
+        timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 20px #ff3333, 0 0 40px #cc0000, 0 0 60px #990000';
+      }
+
       if (current <= 0) {
         clearInterval(interval);
         timerEl.style.opacity = '0';
