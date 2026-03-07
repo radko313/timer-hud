@@ -22,27 +22,27 @@
 </style>
 </head>
 <body>
-  <div id="timer">15</div>
+  <div id="timer">15:00</div>
 
-  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var timerEl = document.getElementById('timer');
+    var totalMs = 15 * 1000;
+    var start = Date.now();
 
-    PortalsSdk.setMessageListener(function(message) {
-      var msg = typeof message === 'string' ? message : String(message);
-      console.log('[Timer HUD] Raw message:', msg);
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
-      if (msg.startsWith('time_')) {
-        var raw = msg.substring(5);
-        console.log('[Timer HUD] Parsed value:', raw);
-        var val = parseFloat(raw);
-        if (!isNaN(val)) {
-          timerEl.textContent = Math.floor(val);
-        } else {
-          timerEl.textContent = raw;
-        }
+    function update() {
+      var elapsed = Date.now() - start;
+      var remaining = Math.max(totalMs - elapsed, 0);
+      var secs = Math.floor(remaining / 1000);
+      var hundredths = Math.floor((remaining % 1000) / 10);
+      timerEl.textContent = secs + ':' + pad(hundredths);
+      if (remaining > 0) {
+        requestAnimationFrame(update);
       }
-    });
+    }
+
+    requestAnimationFrame(update);
   </script>
 </body>
 </html>
