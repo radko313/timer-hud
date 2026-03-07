@@ -60,11 +60,19 @@
 
       if (current <= 0) {
         clearInterval(interval);
-        timerEl.style.opacity = '0';
-        PortalsSdk.sendMessageToUnity(JSON.stringify({
-          TaskName: 'Countdown',
-          TaskTargetState: 'SetActiveToCompleted'
-        }));
+        timerEl.textContent = 'START';
+        timerEl.style.color = '#00ff88';
+        timerEl.style.textShadow = '0 0 7px #00ff88, 0 0 20px #00ff88, 0 0 40px #00cc66, 0 0 60px #009944';
+        timerEl.classList.remove('tick');
+        void timerEl.offsetWidth;
+        timerEl.classList.add('tick');
+        setTimeout(function() {
+          timerEl.style.opacity = '0';
+          PortalsSdk.sendMessageToUnity(JSON.stringify({
+            TaskName: 'Countdown',
+            TaskTargetState: 'SetActiveToCompleted'
+          }));
+        }, 1500);
       }
     }, 1000);
   </script>
