@@ -44,7 +44,10 @@
       } else {
         timerEl.textContent = '0:00';
         timerEl.style.opacity = '0';
-        try { PortalsSdk.closeIframe(); } catch(e) {}
+        PortalsSdk.sendMessageToUnity(JSON.stringify({
+          TaskName: 'Countdown',
+          TaskTargetState: 'SetActiveToCompleted'
+        }));
       }
     }
 
