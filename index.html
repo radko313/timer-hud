@@ -18,12 +18,14 @@
     text-shadow: 0 0 10px rgba(0,0,0,0.5);
     text-align: center;
     line-height: 1;
+    transition: opacity 0.5s;
   }
 </style>
 </head>
 <body>
   <div id="timer">15:00</div>
 
+  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var timerEl = document.getElementById('timer');
     var totalMs = 15 * 1000;
@@ -40,7 +42,9 @@
       if (remaining > 0) {
         requestAnimationFrame(update);
       } else {
-        timerEl.style.display = 'none';
+        timerEl.textContent = '0:00';
+        timerEl.style.opacity = '0';
+        try { PortalsSdk.closeIframe(); } catch(e) {}
       }
     }
 
