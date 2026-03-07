@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+  #timer {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: #00ff88;
+    text-shadow:
+      0 0 7px #00ff88,
+      0 0 15px #00ff88,
+      0 0 30px #00cc66;
+    text-align: center;
+    line-height: 1;
+    transition: opacity 0.5s;
+  }
+</style>
+</head>
+<body>
+  <div id="timer">7:00</div>
+
+  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
+  <script>
+    var timerEl = document.getElementById('timer');
+    var remaining = 7 * 60; // 7 minutes in seconds
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function format(secs) {
+      var m = Math.floor(secs / 60);
+      var s = secs % 60;
+      return m + ':' + pad(s);
+    }
+
+    function tick() {
+      remaining--;
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        timerEl.textContent = 'ROUND OVER';
+        timerEl.style.fontSize = '24px';
+        timerEl.style.color = '#ff3333';
+        timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 15px #ff3333, 0 0 30px #cc0000';
+        setTimeout(function() {
+          timerEl.style.opacity = '0';
+          PortalsSdk.sendMessageToUnity(JSON.stringify({
+            TaskName: 'RoundActive',
+            TaskTargetState: 'SetActiveToCompleted'
+          }));
+        }, 2000);
+        return;
+      }
+
+      timerEl.textContent = format(remaining);
+
+      // Go red in last 30 seconds
+      if (remaining <= 30) {
+        timerEl.style.color = '#ff3333';
+        timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 15px #ff3333, 0 0 30px #cc0000';
+      }
+      // Go yellow in last 60 seconds
+      else if (remaining <= 60) {
+        timerEl.style.color = '#ffcc00';
+        timerEl.style.textShadow = '0 0 7px #ffcc00, 0 0 15px #ffcc00, 0 0 30px #cc9900';
+      }
+    }
+
+    var interval = setInterval(tick, 1000);
+  </script>
+</body>
+</html>
