@@ -23,35 +23,26 @@
 </style>
 </head>
 <body>
-  <div id="timer">15:00</div>
+  <div id="timer">15</div>
 
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var timerEl = document.getElementById('timer');
-    var totalMs = 15 * 1000;
-    var start = Date.now();
+    var total = 15;
+    var current = total;
 
-    function pad(n) { return n < 10 ? '0' + n : '' + n; }
-
-    function update() {
-      var elapsed = Date.now() - start;
-      var remaining = Math.max(totalMs - elapsed, 0);
-      var secs = Math.floor(remaining / 1000);
-      var hundredths = Math.floor((remaining % 1000) / 10);
-      timerEl.textContent = secs + ':' + pad(hundredths);
-      if (remaining > 0) {
-        requestAnimationFrame(update);
-      } else {
-        timerEl.textContent = '0:00';
+    var interval = setInterval(function() {
+      current--;
+      timerEl.textContent = current;
+      if (current <= 0) {
+        clearInterval(interval);
         timerEl.style.opacity = '0';
         PortalsSdk.sendMessageToUnity(JSON.stringify({
           TaskName: 'Countdown',
           TaskTargetState: 'SetActiveToCompleted'
         }));
       }
-    }
-
-    requestAnimationFrame(update);
+    }, 1000);
   </script>
 </body>
 </html>
