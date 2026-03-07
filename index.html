@@ -39,6 +39,8 @@
       timerEl.textContent = secs + ':' + pad(hundredths);
       if (remaining > 0) {
         requestAnimationFrame(update);
+      } else {
+        timerEl.style.display = 'none';
       }
     }
 
