@@ -30,13 +30,16 @@
 
     PortalsSdk.setMessageListener(function(message) {
       var msg = typeof message === 'string' ? message : String(message);
+      console.log('[Timer HUD] Raw message:', msg);
 
       if (msg.startsWith('time_')) {
-        var val = parseFloat(msg.substring(5));
+        var raw = msg.substring(5);
+        console.log('[Timer HUD] Parsed value:', raw);
+        var val = parseFloat(raw);
         if (!isNaN(val)) {
-          var remaining = Math.ceil(15 - val);
-          if (remaining < 0) remaining = 0;
-          timerEl.textContent = remaining;
+          timerEl.textContent = Math.floor(val);
+        } else {
+          timerEl.textContent = raw;
         }
       }
     });
