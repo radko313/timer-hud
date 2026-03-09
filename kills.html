@@ -55,6 +55,7 @@
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var killCountEl = document.getElementById('killCount');
+    var myName = '';
 
     function parsePortalsObj(str) {
       var result = {};
@@ -77,39 +78,43 @@
     PortalsSdk.setMessageListener(function(message) {
       var msg = typeof message === 'string' ? message : String(message);
 
-      // Format: kills:{name=kills,...}:{name=name,...}
       if (msg.indexOf('kills:') === 0) {
         var rest = msg.substring(6);
         var firstBrace = rest.indexOf('{');
 
         if (firstBrace > -1) {
-          // Player parameter format
+          // Object format: kills:{name=kills,...}:{name=name,...}
           rest = rest.substring(firstBrace);
           var splitIdx = rest.indexOf('}:{');
-          var killsMap, myName = '';
+          var killsMap;
 
           if (splitIdx > -1) {
             killsMap = parsePortalsObj(rest.substring(0, splitIdx + 1));
-            var usernameObj = rest.substring(splitIdx + 2);
-            // username pipe gives {"name"="name"} - parse to find our name
-            var namesMap = parsePortalsObj(usernameObj);
-            // Each client gets their own username, so there should be a match
-            // The username object has all players but we just need our own
-            // Since we cant tell which is ours, use the first name that exists in killsMap
-            for (var key in namesMap) {
-              myName = key;
-              break;
+            var namesObj = rest.substring(splitIdx + 2);
+            var namesMap = parsePortalsObj(namesObj);
+            // playerName sends {"name"="name"} for each player
+            // Find my name - use stored myName or first entry
+            if (!myName) {
+              for (var key in namesMap) {
+                myName = key;
+                break;
+              }
             }
           } else {
             killsMap = parsePortalsObj(rest);
-            for (var key in killsMap) {
-              myName = key;
-              break;
+            if (!myName) {
+              for (var key in killsMap) {
+                myName = key;
+                break;
+              }
             }
           }
 
-          var myKills = (myName && killsMap[myName] !== undefined) ? killsMap[myName] : '0';
-          killCountEl.textContent = myKills;
+          var val = '0';
+          if (myName && killsMap[myName] !== undefined) {
+            val = killsMap[myName];
+          }
+          killCountEl.textContent = val;
           killCountEl.classList.remove('pop');
           void killCountEl.offsetWidth;
           killCountEl.classList.add('pop');
