@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+  #kills {
+    font-family: 'Arial Black', Arial, sans-serif;
+    text-align: center;
+    line-height: 1;
+  }
+  #kills .label {
+    font-size: 12px;
+    color: #ff6666;
+    text-shadow: 0 0 5px #ff3333;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  #killCount {
+    font-size: 28px;
+    font-weight: 900;
+    color: #ff3333;
+    text-shadow:
+      0 0 7px #ff3333,
+      0 0 15px #ff3333,
+      0 0 30px #cc0000;
+  }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+  .pop {
+    animation: pop 0.3s ease-out;
+  }
+</style>
+</head>
+<body>
+  <div id="kills">
+    <div class="label">KILLS</div>
+    <div id="killCount">0</div>
+  </div>
+
+  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
+  <script>
+    var killCountEl = document.getElementById('killCount');
+
+    PortalsSdk.setMessageListener(function(message) {
+      var parts = message.split(':');
+      if (parts[0] === 'kills') {
+        killCountEl.textContent = parts[1];
+        killCountEl.classList.remove('pop');
+        void killCountEl.offsetWidth;
+        killCountEl.classList.add('pop');
+      }
+    });
+  </script>
+</body>
+</html>
