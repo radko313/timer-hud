@@ -134,8 +134,10 @@
 
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
-    var players = {};
-    var playerNames = {};
+    var p1Kills = 0;
+    var p2Kills = 0;
+    var playerNames = { 'Player 1': 'Player 1', 'Player 2': 'Player 2' };
+    var gotData = false;
     var revealed = false;
     var revealTimer = null;
 
@@ -150,31 +152,31 @@
       var mvpKillsEl = document.getElementById('mvpKills');
       var scoreboard = document.getElementById('scoreboard');
 
-      var mvpKey = null;
-      var mvpKills = -1;
-      for (var key in players) {
-        if (players[key] > mvpKills) {
-          mvpKills = players[key];
-          mvpKey = key;
-        }
+      // Determine MVP
+      var mvpKey, mvpKills;
+      if (p1Kills >= p2Kills) {
+        mvpKey = 'Player 1';
+        mvpKills = p1Kills;
+      } else {
+        mvpKey = 'Player 2';
+        mvpKills = p2Kills;
       }
 
-      var mvpDisplay = playerNames[mvpKey] || mvpKey || '—';
-      if (mvpKills < 0) mvpKills = 0;
-
-      mvpNameEl.textContent = mvpDisplay;
+      mvpNameEl.textContent = playerNames[mvpKey];
       mvpKillsEl.textContent = mvpKills;
 
-      var sorted = Object.keys(players).sort(function(a, b) {
-        return players[b] - players[a];
-      });
+      // Build scoreboard sorted by kills
+      var entries = [
+        { key: 'Player 1', kills: p1Kills },
+        { key: 'Player 2', kills: p2Kills }
+      ];
+      entries.sort(function(a, b) { return b.kills - a.kills; });
 
-      for (var i = 0; i < sorted.length; i++) {
-        var key = sorted[i];
-        var displayName = playerNames[key] || key;
+      for (var i = 0; i < entries.length; i++) {
+        var e = entries[i];
         var entry = document.createElement('div');
-        entry.className = 'score-entry' + (key === mvpKey ? ' mvp-entry' : '');
-        entry.innerHTML = '<span class="score-name">' + displayName + '</span><span class="score-kills">' + players[key] + ' kills</span>';
+        entry.className = 'score-entry' + (e.key === mvpKey ? ' mvp-entry' : '');
+        entry.innerHTML = '<span class="score-name">' + playerNames[e.key] + '</span><span class="score-kills">' + e.kills + ' kills</span>';
         scoreboard.appendChild(entry);
       }
 
@@ -196,25 +198,36 @@
 
     if (typeof PortalsSdk !== 'undefined') {
       PortalsSdk.setMessageListener(function(message) {
-        // Format: mvpdata:P1kills:P2kills
+        console.log('[MVP] Received:', message);
+
+        // Format: mvpdata:P1kills:P2kills:myPlayerNum:myUsername
         if (message.indexOf('mvpdata:') === 0) {
           var parts = message.substring(8).split(':');
-          var p1 = parseInt(parts[0]) || 0;
-          var p2 = parseInt(parts[1]) || 0;
-          players['Player 1'] = p1;
-          players['Player 2'] = p2;
+          p1Kills = parseInt(parts[0]) || 0;
+          p2Kills = parseInt(parts[1]) || 0;
+          gotData = true;
 
+          // parts[2] = playerNum, parts[3] = username (may have quotes)
+          if (parts.length >= 4) {
+            var num = parseInt(parts[2]) || 0;
+            var name = parts.slice(3).join(':').replace(/^"|"$/g, '').trim();
+            if (num === 1) playerNames['Player 1'] = name;
+            if (num === 2) playerNames['Player 2'] = name;
+          }
+
+          // Wait a moment for both clients to send their names
           if (revealTimer) clearTimeout(revealTimer);
-          revealTimer = setTimeout(revealMVP, 1000);
+          revealTimer = setTimeout(revealMVP, 2000);
         }
 
-        // Format: pname:playerNum:username
+        // Legacy format: pname:playerNum:username
         if (message.indexOf('pname:') === 0) {
           var parts = message.substring(6).split(':');
           if (parts.length >= 2) {
-            var num = parts[0].trim();
-            var name = parts[1].replace(/^"|"$/g, '').trim();
-            playerNames['Player ' + num] = name;
+            var num = parseInt(parts[0]) || 0;
+            var name = parts.slice(1).join(':').replace(/^"|"$/g, '').trim();
+            if (num === 1) playerNames['Player 1'] = name;
+            if (num === 2) playerNames['Player 2'] = name;
           }
         }
       });
