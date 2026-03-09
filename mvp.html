@@ -122,10 +122,16 @@
   <script>
     var players = {};
     var revealed = false;
-    var revealTimer = null;
 
     function cleanName(name) {
       return name.replace(/^"|"$/g, '').trim();
+    }
+
+    function addPlayer(name, kills) {
+      name = cleanName(name);
+      if (name && name !== '') {
+        players[name] = kills;
+      }
     }
 
     function revealMVP() {
@@ -137,11 +143,10 @@
       var mvpKillsEl = document.getElementById('mvpKills');
       var scoreboard = document.getElementById('scoreboard');
 
-      // Find MVP
       var mvpName = '—';
       var mvpKills = 0;
       for (var name in players) {
-        if (players[name] > mvpKills) {
+        if (players[name] > mvpKills || mvpName === '—') {
           mvpKills = players[name];
           mvpName = name;
         }
@@ -150,7 +155,6 @@
       mvpNameEl.textContent = mvpName;
       mvpKillsEl.textContent = mvpKills;
 
-      // Build scoreboard sorted by kills
       var sorted = Object.keys(players).sort(function(a, b) {
         return players[b] - players[a];
       });
@@ -164,7 +168,6 @@
 
       overlay.classList.add('show');
 
-      // After 5 seconds, fade out and signal Portals
       setTimeout(function() {
         overlay.classList.remove('show');
         overlay.classList.add('hide');
@@ -179,26 +182,29 @@
       }, 5000);
     }
 
-    PortalsSdk.setMessageListener(function(message) {
-      // Expected format: mvpdata:username:kills
-      if (message.indexOf('mvpdata:') === 0) {
-        var parts = message.substring(8).split(':');
-        if (parts.length >= 2) {
-          var name = cleanName(parts[0]);
-          var kills = parseInt(parts[1]) || 0;
-          players[name] = kills;
+    // Read from URL params
+    var params = new URLSearchParams(window.location.search);
+    var urlPlayer = params.get('player');
+    var urlKills = params.get('kills');
 
-          // Wait 2 seconds after last message, then reveal
-          if (revealTimer) clearTimeout(revealTimer);
-          revealTimer = setTimeout(revealMVP, 2000);
+    if (urlPlayer && urlKills !== null) {
+      addPlayer(urlPlayer, parseInt(urlKills) || 0);
+    }
+
+    // Also listen for messages (for additional players in multiplayer)
+    if (typeof PortalsSdk !== 'undefined') {
+      PortalsSdk.setMessageListener(function(message) {
+        if (message.indexOf('mvpdata:') === 0) {
+          var parts = message.substring(8).split(':');
+          if (parts.length >= 2) {
+            addPlayer(parts[0], parseInt(parts[1]) || 0);
+          }
         }
-      }
-    });
+      });
+    }
 
-    // Fallback: reveal after 4 seconds no matter what
-    setTimeout(function() {
-      revealMVP();
-    }, 4000);
+    // Reveal after short delay to collect all data
+    setTimeout(revealMVP, 2000);
   </script>
 </body>
 </html>
