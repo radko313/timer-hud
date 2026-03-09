@@ -100,9 +100,23 @@
   .animate-in {
     animation: slideUp 0.6s ease-out forwards;
   }
+
+  #loading {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #666;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
 </style>
 </head>
 <body>
+  <div id="loading">Loading results...</div>
   <div id="overlay">
     <div class="title">ROUND OVER</div>
     <div class="divider"></div>
@@ -122,6 +136,8 @@
   <script>
     var players = {};
     var revealed = false;
+    var dataReceived = false;
+    var revealTimer = null;
 
     function cleanName(name) {
       return name.replace(/^"|"$/g, '').trim();
@@ -131,12 +147,15 @@
       name = cleanName(name);
       if (name && name !== '') {
         players[name] = kills;
+        dataReceived = true;
       }
     }
 
     function revealMVP() {
       if (revealed) return;
       revealed = true;
+
+      document.getElementById('loading').style.display = 'none';
 
       var overlay = document.getElementById('overlay');
       var mvpNameEl = document.getElementById('mvpName');
@@ -182,16 +201,7 @@
       }, 5000);
     }
 
-    // Read from URL params
-    var params = new URLSearchParams(window.location.search);
-    var urlPlayer = params.get('player');
-    var urlKills = params.get('kills');
-
-    if (urlPlayer && urlKills !== null) {
-      addPlayer(urlPlayer, parseInt(urlKills) || 0);
-    }
-
-    // Also listen for messages (for additional players in multiplayer)
+    // Listen for messages
     if (typeof PortalsSdk !== 'undefined') {
       PortalsSdk.setMessageListener(function(message) {
         if (message.indexOf('mvpdata:') === 0) {
@@ -199,12 +209,17 @@
           if (parts.length >= 2) {
             addPlayer(parts[0], parseInt(parts[1]) || 0);
           }
+          // Wait a bit for more players, then reveal
+          if (revealTimer) clearTimeout(revealTimer);
+          revealTimer = setTimeout(revealMVP, 2000);
         }
       });
     }
 
-    // Reveal after short delay to collect all data
-    setTimeout(revealMVP, 2000);
+    // Fallback: if no data after 8 seconds, show anyway
+    setTimeout(function() {
+      revealMVP();
+    }, 8000);
   </script>
 </body>
 </html>
