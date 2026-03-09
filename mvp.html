@@ -11,7 +11,7 @@
     overflow: hidden;
     width: 100%;
     height: 100%;
-    font-family: 'Arial', sans-serif;
+    font-family: Arial, sans-serif;
   }
   #overlay {
     position: fixed;
@@ -26,7 +26,6 @@
   }
   #overlay.show { opacity: 1; }
   #overlay.hide { opacity: 0; }
-
   .title {
     font-size: 14px;
     color: #999;
@@ -71,10 +70,7 @@
     background: linear-gradient(90deg, transparent, #ffd700, transparent);
     margin: 16px 0;
   }
-  .scoreboard {
-    margin-top: 20px;
-    text-align: center;
-  }
+  .scoreboard { margin-top: 20px; text-align: center; }
   .scoreboard-title {
     font-size: 11px;
     color: #666;
@@ -82,25 +78,15 @@
     letter-spacing: 3px;
     margin-bottom: 8px;
   }
-  .score-entry {
-    font-size: 16px;
-    color: #aaa;
-    margin: 4px 0;
-  }
-  .score-entry.mvp-entry {
-    color: #ffd700;
-  }
+  .score-entry { font-size: 16px; color: #aaa; margin: 4px 0; }
+  .score-entry.mvp-entry { color: #ffd700; }
   .score-name { margin-right: 12px; }
   .score-kills { color: #ff6666; font-weight: 900; }
-
   @keyframes slideUp {
     from { transform: translateY(30px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
-  .animate-in {
-    animation: slideUp 0.6s ease-out forwards;
-  }
-
+  .animate-in { animation: slideUp 0.6s ease-out forwards; }
   #loading {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -121,7 +107,7 @@
     <div class="title">ROUND OVER</div>
     <div class="divider"></div>
     <div class="mvp-label animate-in">MVP</div>
-    <div class="player-name animate-in" id="mvpName">—</div>
+    <div class="player-name animate-in" id="mvpName"></div>
     <div class="kills-row animate-in">
       <div class="kills-num" id="mvpKills">0</div>
       <div class="kills-label">kills</div>
@@ -136,104 +122,115 @@
   <script>
     var p1Kills = 0;
     var p2Kills = 0;
-    var playerNames = { 'Player 1': 'Player 1', 'Player 2': 'Player 2' };
-    var gotData = false;
+    var p1Name = "Player 1";
+    var p2Name = "Player 2";
     var revealed = false;
     var revealTimer = null;
+
+    function parsePortalsObj(str) {
+      var result = {};
+      if (!str) return result;
+      str = str.replace(/^\{|\}$/g, "").trim();
+      var pairs = str.split(",");
+      for (var i = 0; i < pairs.length; i++) {
+        var pair = pairs[i].trim();
+        var eqIdx = pair.indexOf("=");
+        if (eqIdx > -1) {
+          var k = pair.substring(0, eqIdx).replace(/^"|"$/g, "").trim();
+          var v = pair.substring(eqIdx + 1).replace(/^"|"$/g, "").trim();
+          result[k] = v;
+        }
+      }
+      return result;
+    }
 
     function revealMVP() {
       if (revealed) return;
       revealed = true;
+      document.getElementById("loading").style.display = "none";
+      var overlay = document.getElementById("overlay");
+      var mvpNameEl = document.getElementById("mvpName");
+      var mvpKillsEl = document.getElementById("mvpKills");
+      var scoreboard = document.getElementById("scoreboard");
 
-      document.getElementById('loading').style.display = 'none';
-
-      var overlay = document.getElementById('overlay');
-      var mvpNameEl = document.getElementById('mvpName');
-      var mvpKillsEl = document.getElementById('mvpKills');
-      var scoreboard = document.getElementById('scoreboard');
-
-      // Determine MVP
       var mvpKey, mvpKills;
-      if (p1Kills >= p2Kills) {
-        mvpKey = 'Player 1';
-        mvpKills = p1Kills;
-      } else {
-        mvpKey = 'Player 2';
-        mvpKills = p2Kills;
-      }
+      if (p1Kills >= p2Kills) { mvpKey = 1; mvpKills = p1Kills; }
+      else { mvpKey = 2; mvpKills = p2Kills; }
 
-      mvpNameEl.textContent = playerNames[mvpKey];
+      mvpNameEl.textContent = mvpKey === 1 ? p1Name : p2Name;
       mvpKillsEl.textContent = mvpKills;
 
-      // Build scoreboard sorted by kills
       var entries = [
-        { key: 'Player 1', kills: p1Kills },
-        { key: 'Player 2', kills: p2Kills }
+        { name: p1Name, kills: p1Kills, isMvp: mvpKey === 1 },
+        { name: p2Name, kills: p2Kills, isMvp: mvpKey === 2 }
       ];
       entries.sort(function(a, b) { return b.kills - a.kills; });
 
       for (var i = 0; i < entries.length; i++) {
         var e = entries[i];
-        var entry = document.createElement('div');
-        entry.className = 'score-entry' + (e.key === mvpKey ? ' mvp-entry' : '');
-        entry.innerHTML = '<span class="score-name">' + playerNames[e.key] + '</span><span class="score-kills">' + e.kills + ' kills</span>';
+        var entry = document.createElement("div");
+        entry.className = "score-entry" + (e.isMvp ? " mvp-entry" : "");
+        entry.innerHTML = "<span class="score-name">" + e.name + "</span><span class="score-kills">" + e.kills + " kills</span>";
         scoreboard.appendChild(entry);
       }
 
-      overlay.classList.add('show');
+      overlay.classList.add("show");
 
       setTimeout(function() {
-        overlay.classList.remove('show');
-        overlay.classList.add('hide');
+        overlay.classList.remove("show");
+        overlay.classList.add("hide");
         setTimeout(function() {
-          if (typeof PortalsSdk !== 'undefined') {
+          if (typeof PortalsSdk !== "undefined") {
             PortalsSdk.sendMessageToUnity(JSON.stringify({
-              TaskName: '12_ShowMVP',
-              TaskTargetState: 'SetActiveToCompleted'
+              TaskName: "12_ShowMVP",
+              TaskTargetState: "SetActiveToCompleted"
             }));
           }
         }, 800);
       }, 5000);
     }
 
-    if (typeof PortalsSdk !== 'undefined') {
+    if (typeof PortalsSdk !== "undefined") {
       PortalsSdk.setMessageListener(function(message) {
-        console.log('[MVP] Received:', message);
+        console.log("[MVP] Received:", message);
+        var msg = typeof message === "string" ? message : String(message);
 
-        // Format: mvpdata:P1kills:P2kills:myPlayerNum:myUsername
-        if (message.indexOf('mvpdata:') === 0) {
-          var parts = message.substring(8).split(':');
-          p1Kills = parseInt(parts[0]) || 0;
-          p2Kills = parseInt(parts[1]) || 0;
-          gotData = true;
+        if (msg.indexOf("mvpdata:") === 0) {
+          var rest = msg.substring(8);
+          var firstColon = rest.indexOf(":");
+          p1Kills = parseInt(rest.substring(0, firstColon)) || 0;
+          rest = rest.substring(firstColon + 1);
 
-          // parts[2] = playerNum, parts[3] = username (may have quotes)
-          if (parts.length >= 4) {
-            var num = parseInt(parts[2]) || 0;
-            var name = parts.slice(3).join(':').replace(/^"|"$/g, '').trim();
-            if (num === 1) playerNames['Player 1'] = name;
-            if (num === 2) playerNames['Player 2'] = name;
+          var braceStart = rest.indexOf(":{");
+          if (braceStart > -1) {
+            p2Kills = parseInt(rest.substring(0, braceStart)) || 0;
+            rest = rest.substring(braceStart + 1);
+            var splitIdx = rest.indexOf("}:{");
+            if (splitIdx > -1) {
+              var numObj = rest.substring(0, splitIdx + 1);
+              var nameObj = rest.substring(splitIdx + 2);
+              var nums = parsePortalsObj(numObj);
+              var names = parsePortalsObj(nameObj);
+              console.log("[MVP] Nums:", JSON.stringify(nums));
+              console.log("[MVP] Names:", JSON.stringify(names));
+              for (var key in nums) {
+                var pNum = parseInt(nums[key]) || 0;
+                var displayName = names[key] || key;
+                if (pNum === 1) p1Name = displayName;
+                if (pNum === 2) p2Name = displayName;
+              }
+            }
+          } else {
+            p2Kills = parseInt(rest) || 0;
           }
 
-          // Wait a moment for both clients to send their names
+          console.log("[MVP] P1:", p1Name, p1Kills, "P2:", p2Name, p2Kills);
           if (revealTimer) clearTimeout(revealTimer);
-          revealTimer = setTimeout(revealMVP, 2000);
-        }
-
-        // Legacy format: pname:playerNum:username
-        if (message.indexOf('pname:') === 0) {
-          var parts = message.substring(6).split(':');
-          if (parts.length >= 2) {
-            var num = parseInt(parts[0]) || 0;
-            var name = parts.slice(1).join(':').replace(/^"|"$/g, '').trim();
-            if (num === 1) playerNames['Player 1'] = name;
-            if (num === 2) playerNames['Player 2'] = name;
-          }
+          revealTimer = setTimeout(revealMVP, 1000);
         }
       });
     }
 
-    // Fallback
     setTimeout(function() { revealMVP(); }, 8000);
   </script>
 </body>
