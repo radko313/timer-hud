@@ -56,13 +56,70 @@
   <script>
     var killCountEl = document.getElementById('killCount');
 
+    function parsePortalsObj(str) {
+      var result = {};
+      if (!str) return result;
+      str = str.replace(/^\{|\}$/g, '').trim();
+      if (!str) return result;
+      var pairs = str.split(',');
+      for (var i = 0; i < pairs.length; i++) {
+        var pair = pairs[i].trim();
+        var eqIdx = pair.indexOf('=');
+        if (eqIdx > -1) {
+          var k = pair.substring(0, eqIdx).replace(/^"|"$/g, '').trim();
+          var v = pair.substring(eqIdx + 1).replace(/^"|"$/g, '').trim();
+          result[k] = v;
+        }
+      }
+      return result;
+    }
+
     PortalsSdk.setMessageListener(function(message) {
-      var parts = message.split(':');
-      if (parts[0] === 'kills') {
-        killCountEl.textContent = parts[1];
-        killCountEl.classList.remove('pop');
-        void killCountEl.offsetWidth;
-        killCountEl.classList.add('pop');
+      var msg = typeof message === 'string' ? message : String(message);
+
+      // Format: kills:{name=kills,...}:{name=name,...}
+      if (msg.indexOf('kills:') === 0) {
+        var rest = msg.substring(6);
+        var firstBrace = rest.indexOf('{');
+
+        if (firstBrace > -1) {
+          // Player parameter format
+          rest = rest.substring(firstBrace);
+          var splitIdx = rest.indexOf('}:{');
+          var killsMap, myName = '';
+
+          if (splitIdx > -1) {
+            killsMap = parsePortalsObj(rest.substring(0, splitIdx + 1));
+            var usernameObj = rest.substring(splitIdx + 2);
+            // username pipe gives {"name"="name"} - parse to find our name
+            var namesMap = parsePortalsObj(usernameObj);
+            // Each client gets their own username, so there should be a match
+            // The username object has all players but we just need our own
+            // Since we cant tell which is ours, use the first name that exists in killsMap
+            for (var key in namesMap) {
+              myName = key;
+              break;
+            }
+          } else {
+            killsMap = parsePortalsObj(rest);
+            for (var key in killsMap) {
+              myName = key;
+              break;
+            }
+          }
+
+          var myKills = (myName && killsMap[myName] !== undefined) ? killsMap[myName] : '0';
+          killCountEl.textContent = myKills;
+          killCountEl.classList.remove('pop');
+          void killCountEl.offsetWidth;
+          killCountEl.classList.add('pop');
+        } else {
+          // Simple format: kills:NUMBER
+          killCountEl.textContent = rest;
+          killCountEl.classList.remove('pop');
+          void killCountEl.offsetWidth;
+          killCountEl.classList.add('pop');
+        }
       }
     });
   </script>
