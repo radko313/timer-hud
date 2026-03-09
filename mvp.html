@@ -135,21 +135,9 @@
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var players = {};
+    var playerNames = {};
     var revealed = false;
-    var dataReceived = false;
     var revealTimer = null;
-
-    function cleanName(name) {
-      return name.replace(/^"|"$/g, '').trim();
-    }
-
-    function addPlayer(name, kills) {
-      name = cleanName(name);
-      if (name && name !== '') {
-        players[name] = kills;
-        dataReceived = true;
-      }
-    }
 
     function revealMVP() {
       if (revealed) return;
@@ -162,16 +150,19 @@
       var mvpKillsEl = document.getElementById('mvpKills');
       var scoreboard = document.getElementById('scoreboard');
 
-      var mvpName = '—';
-      var mvpKills = 0;
-      for (var name in players) {
-        if (players[name] > mvpKills || mvpName === '—') {
-          mvpKills = players[name];
-          mvpName = name;
+      var mvpKey = null;
+      var mvpKills = -1;
+      for (var key in players) {
+        if (players[key] > mvpKills) {
+          mvpKills = players[key];
+          mvpKey = key;
         }
       }
 
-      mvpNameEl.textContent = mvpName;
+      var mvpDisplay = playerNames[mvpKey] || mvpKey || '—';
+      if (mvpKills < 0) mvpKills = 0;
+
+      mvpNameEl.textContent = mvpDisplay;
       mvpKillsEl.textContent = mvpKills;
 
       var sorted = Object.keys(players).sort(function(a, b) {
@@ -179,9 +170,11 @@
       });
 
       for (var i = 0; i < sorted.length; i++) {
+        var key = sorted[i];
+        var displayName = playerNames[key] || key;
         var entry = document.createElement('div');
-        entry.className = 'score-entry' + (sorted[i] === mvpName ? ' mvp-entry' : '');
-        entry.innerHTML = '<span class="score-name">' + sorted[i] + '</span><span class="score-kills">' + players[sorted[i]] + ' kills</span>';
+        entry.className = 'score-entry' + (key === mvpKey ? ' mvp-entry' : '');
+        entry.innerHTML = '<span class="score-name">' + displayName + '</span><span class="score-kills">' + players[key] + ' kills</span>';
         scoreboard.appendChild(entry);
       }
 
@@ -201,25 +194,34 @@
       }, 5000);
     }
 
-    // Listen for messages
     if (typeof PortalsSdk !== 'undefined') {
       PortalsSdk.setMessageListener(function(message) {
+        // Format: mvpdata:P1kills:P2kills
         if (message.indexOf('mvpdata:') === 0) {
           var parts = message.substring(8).split(':');
-          if (parts.length >= 2) {
-            addPlayer(parts[0], parseInt(parts[1]) || 0);
-          }
-          // Wait a bit for more players, then reveal
+          var p1 = parseInt(parts[0]) || 0;
+          var p2 = parseInt(parts[1]) || 0;
+          players['Player 1'] = p1;
+          players['Player 2'] = p2;
+
           if (revealTimer) clearTimeout(revealTimer);
-          revealTimer = setTimeout(revealMVP, 2000);
+          revealTimer = setTimeout(revealMVP, 1000);
+        }
+
+        // Format: pname:playerNum:username
+        if (message.indexOf('pname:') === 0) {
+          var parts = message.substring(6).split(':');
+          if (parts.length >= 2) {
+            var num = parts[0].trim();
+            var name = parts[1].replace(/^"|"$/g, '').trim();
+            playerNames['Player ' + num] = name;
+          }
         }
       });
     }
 
-    // Fallback: if no data after 8 seconds, show anyway
-    setTimeout(function() {
-      revealMVP();
-    }, 8000);
+    // Fallback
+    setTimeout(function() { revealMVP(); }, 8000);
   </script>
 </body>
 </html>
