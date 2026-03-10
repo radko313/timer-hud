@@ -22,7 +22,7 @@
       0 0 60px #009944;
     text-align: center;
     line-height: 1;
-    transition: opacity 0.5s;
+    transition: opacity 0.3s;
   }
   @keyframes pulse {
     0% { transform: scale(1); opacity: 1; }
@@ -47,31 +47,19 @@
       current--;
       if (current <= 0) {
         clearInterval(interval);
-        timerEl.textContent = 'START';
-        timerEl.style.fontSize = '32px';
-        timerEl.style.color = '#00ff88';
-        timerEl.style.textShadow = '0 0 7px #00ff88, 0 0 20px #00ff88, 0 0 40px #00cc66, 0 0 60px #009944';
-        timerEl.classList.remove('tick');
-        void timerEl.offsetWidth;
-        timerEl.classList.add('tick');
-        setTimeout(function() {
-          timerEl.style.opacity = '0';
-          PortalsSdk.sendMessageToUnity(JSON.stringify({
-            TaskName: 'Countdown',
-            TaskTargetState: 'SetActiveToCompleted'
-          }));
-        }, 1500);
+        timerEl.style.opacity = '0';
+        PortalsSdk.sendMessageToUnity(JSON.stringify({
+          TaskName: 'Countdown',
+          TaskTargetState: 'SetActiveToCompleted'
+        }));
         return;
       }
 
       timerEl.textContent = current;
-
-      // Pulse animation on each tick
       timerEl.classList.remove('tick');
       void timerEl.offsetWidth;
       timerEl.classList.add('tick');
 
-      // Go red in last 5 seconds
       if (current <= 3) {
         timerEl.style.color = '#ff3333';
         timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 20px #ff3333, 0 0 40px #cc0000, 0 0 60px #990000';
