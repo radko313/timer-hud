@@ -56,6 +56,7 @@
   <script>
     var killCountEl = document.getElementById('killCount');
     var myName = '';
+    var prevKills = {};
 
     function parsePortalsObj(str) {
       var result = {};
@@ -83,44 +84,42 @@
         var firstBrace = rest.indexOf('{');
 
         if (firstBrace > -1) {
-          // Object format: kills:{name=kills,...}:{name=name,...}
           rest = rest.substring(firstBrace);
           var splitIdx = rest.indexOf('}:{');
           var killsMap;
 
           if (splitIdx > -1) {
             killsMap = parsePortalsObj(rest.substring(0, splitIdx + 1));
-            var namesObj = rest.substring(splitIdx + 2);
-            var namesMap = parsePortalsObj(namesObj);
-            // playerName sends {"name"="name"} for each player
-            // Find my name - use stored myName or first entry
-            if (!myName) {
-              for (var key in namesMap) {
-                myName = key;
-                break;
-              }
-            }
           } else {
             killsMap = parsePortalsObj(rest);
-            if (!myName) {
-              for (var key in killsMap) {
-                myName = key;
+          }
+
+          // Detect who "I" am: find which player's kills went UP
+          if (!myName) {
+            for (var name in killsMap) {
+              var newVal = parseInt(killsMap[name]) || 0;
+              var oldVal = parseInt(prevKills[name]) || 0;
+              if (newVal > oldVal) {
+                myName = name;
                 break;
               }
             }
           }
 
-          var val = '0';
-          if (myName && killsMap[myName] !== undefined) {
-            val = killsMap[myName];
+          // Store for next comparison
+          prevKills = {};
+          for (var k in killsMap) {
+            prevKills[k] = killsMap[k];
           }
-          killCountEl.textContent = val;
-          killCountEl.classList.remove('pop');
-          void killCountEl.offsetWidth;
-          killCountEl.classList.add('pop');
-        } else {
-          // Simple format: kills:NUMBER
-          killCountEl.textContent = rest;
+
+          // Display my kills
+          if (myName && killsMap[myName] !== undefined) {
+            killCountEl.textContent = killsMap[myName];
+          } else {
+            // Fallback: show 0 until we detect who we are
+            killCountEl.textContent = '0';
+          }
+
           killCountEl.classList.remove('pop');
           void killCountEl.offsetWidth;
           killCountEl.classList.add('pop');
