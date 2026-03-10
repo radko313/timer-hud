@@ -35,12 +35,12 @@
 </style>
 </head>
 <body>
-  <div id="timer">15</div>
+  <div id="timer">5</div>
 
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var timerEl = document.getElementById('timer');
-    var total = 15;
+    var total = 5;
     var current = total;
 
     function tick() {
@@ -72,7 +72,7 @@
       timerEl.classList.add('tick');
 
       // Go red in last 5 seconds
-      if (current <= 5) {
+      if (current <= 3) {
         timerEl.style.color = '#ff3333';
         timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 20px #ff3333, 0 0 40px #cc0000, 0 0 60px #990000';
       }
