@@ -61,11 +61,14 @@
       remaining--;
 
       if (remaining <= 0) {
-        remaining = 0;
+        clearInterval(interval);
         timerEl.textContent = 'ROUND OVER';
         timerEl.style.fontSize = '24px';
         timerEl.style.color = '#ff3333';
         timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 15px #ff3333, 0 0 30px #cc0000';
+        setTimeout(function() {
+          timerEl.style.opacity = '0';
+        }, 2000);
         return;
       }
 
@@ -79,13 +82,21 @@
     PortalsSdk.setMessageListener(function(message) {
       var msg = typeof message === 'string' ? message : JSON.stringify(message);
 
+      // Only handle plain sync_ messages (ignore object format)
       if (msg.indexOf('sync_') === 0) {
-        var elapsed = parseFloat(msg.substring(5));
-        if (!isNaN(elapsed) && elapsed >= 0) {
+        var raw = msg.substring(5);
+        // synctimer as multiplayer variable may come as object format
+        // Try to extract a plain number
+        var elapsed = parseFloat(raw);
+        if (!isNaN(elapsed) && elapsed >= 0 && elapsed <= roundDuration) {
           remaining = Math.max(roundDuration - Math.floor(elapsed), 0);
           timerEl.style.fontSize = '28px';
+          timerEl.style.opacity = '1';
           timerEl.textContent = format(remaining);
           updateStyle();
+          // Restart interval in case it was cleared
+          clearInterval(interval);
+          interval = setInterval(tick, 1000);
         }
       }
     });
