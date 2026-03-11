@@ -93,21 +93,17 @@
 
     var interval = setInterval(tick, 1000);
 
-    // Listen for ALL messages from Portals - debug everything
     PortalsSdk.setMessageListener(function(message) {
       var raw = typeof message === 'string' ? message : JSON.stringify(message);
       debugEl.textContent = 'MSG: ' + raw.substring(0, 200);
-      console.log('[round.html] Raw message:', raw);
 
-      // Try to find sync_ in the message
       var syncIdx = raw.indexOf('sync_');
       if (syncIdx >= 0) {
         var after = raw.substring(syncIdx + 5);
         var elapsed = parseFloat(after);
-        debugEl.textContent = 'SYNC raw=' + after.substring(0,50) + ' parsed=' + elapsed;
-        console.log('[round.html] Sync after=', after, 'elapsed=', elapsed);
+        debugEl.textContent = 'elapsed=' + elapsed + ' remaining=' + (roundDuration - Math.floor(elapsed));
 
-        if (!isNaN(elapsed) && elapsed >= 0 && elapsed <= roundDuration) {
+        if (!isNaN(elapsed) && elapsed >= 0) {
           remaining = Math.max(roundDuration - Math.floor(elapsed), 0);
           timerEl.style.fontSize = '28px';
           timerEl.style.opacity = '1';
@@ -115,7 +111,6 @@
           updateStyle();
           clearInterval(interval);
           interval = setInterval(tick, 1000);
-          debugEl.textContent = 'SYNCED to ' + remaining + 's remaining';
         }
       }
     });
