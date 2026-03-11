@@ -25,31 +25,15 @@
     line-height: 1;
     transition: opacity 0.5s;
   }
-  #debug {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    background: rgba(0,0,0,0.8);
-    color: lime;
-    font-family: monospace;
-    font-size: 10px;
-    padding: 2px 4px;
-    z-index: 9999;
-    max-width: 300px;
-    word-break: break-all;
-  }
 </style>
 </head>
 <body>
   <div id="timer">0:45</div>
-  <div id="debug">waiting...</div>
 
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var timerEl = document.getElementById('timer');
-    var debugEl = document.getElementById('debug');
-    var remaining = 45;
-    var roundDuration = 45;
+    var remaining = 45; // 1 minute for testing
 
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -57,19 +41,6 @@
       var m = Math.floor(secs / 60);
       var s = secs % 60;
       return m + ':' + pad(s);
-    }
-
-    function updateStyle() {
-      if (remaining <= 10) {
-        timerEl.style.color = '#ff3333';
-        timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 15px #ff3333, 0 0 30px #cc0000';
-      } else if (remaining <= 20) {
-        timerEl.style.color = '#ffcc00';
-        timerEl.style.textShadow = '0 0 7px #ffcc00, 0 0 15px #ffcc00, 0 0 30px #cc9900';
-      } else {
-        timerEl.style.color = '#00ff88';
-        timerEl.style.textShadow = '0 0 7px #00ff88, 0 0 15px #00ff88, 0 0 30px #00cc66';
-      }
     }
 
     function tick() {
@@ -83,37 +54,29 @@
         timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 15px #ff3333, 0 0 30px #cc0000';
         setTimeout(function() {
           timerEl.style.opacity = '0';
+          PortalsSdk.sendMessageToUnity(JSON.stringify({
+            TaskName: 'RoundActive',
+            TaskTargetState: 'SetActiveToCompleted'
+          }));
         }, 2000);
         return;
       }
 
       timerEl.textContent = format(remaining);
-      updateStyle();
+
+      // Go red in last 30 seconds
+      if (remaining <= 10) {
+        timerEl.style.color = '#ff3333';
+        timerEl.style.textShadow = '0 0 7px #ff3333, 0 0 15px #ff3333, 0 0 30px #cc0000';
+      }
+      // Go yellow in last 60 seconds
+      else if (remaining <= 20) {
+        timerEl.style.color = '#ffcc00';
+        timerEl.style.textShadow = '0 0 7px #ffcc00, 0 0 15px #ffcc00, 0 0 30px #cc9900';
+      }
     }
 
     var interval = setInterval(tick, 1000);
-
-    PortalsSdk.setMessageListener(function(message) {
-      var raw = typeof message === 'string' ? message : JSON.stringify(message);
-      debugEl.textContent = 'MSG: ' + raw.substring(0, 200);
-
-      var syncIdx = raw.indexOf('sync_');
-      if (syncIdx >= 0) {
-        var after = raw.substring(syncIdx + 5);
-        var elapsed = parseFloat(after);
-        debugEl.textContent = 'elapsed=' + elapsed + ' remaining=' + (roundDuration - Math.floor(elapsed));
-
-        if (!isNaN(elapsed) && elapsed >= 0) {
-          remaining = Math.max(roundDuration - Math.floor(elapsed), 0);
-          timerEl.style.fontSize = '28px';
-          timerEl.style.opacity = '1';
-          timerEl.textContent = format(remaining);
-          updateStyle();
-          clearInterval(interval);
-          interval = setInterval(tick, 1000);
-        }
-      }
-    });
   </script>
 </body>
 </html>
