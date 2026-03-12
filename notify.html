@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Notifier</title></head>
+<body style="margin:0;background:transparent;">
+<script>
+const WORKER_URL = "https://portals-discord-notifier.bongiornomordo.workers.dev";
+
+window.addEventListener("message", async (e) => {
+  try {
+    const raw = typeof e.data === "string" ? e.data : JSON.stringify(e.data);
+    let playerName = "Someone";
+    if (raw.includes("=")) {
+      const match = raw.match(/"([^"]+)"="([^"]+)"/);
+      if (match) playerName = match[2];
+    } else {
+      playerName = raw.replace(/["{}\s]/g, "") || "Someone";
+    }
+
+    await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerName, roomName: "Test Room" }),
+    });
+  } catch (err) {
+    console.error("Notify error:", err);
+  }
+});
+</script>
+</body>
+</html>
