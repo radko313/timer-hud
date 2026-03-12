@@ -1,51 +1,13 @@
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Notifier</title>
-<script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
-</head>
+<head><meta charset="utf-8"><title>N</title></head>
 <body style="margin:0;background:transparent;">
 <script>
-const WORKER_URL = "https://portals-discord-notifier.bongiornomordo.workers.dev";
-let sent = false;
-
-// Listen for playerName message from Portals
-PortalsSdk.setMessageListener(function(msg) {
-  if (sent) return;
-  sent = true;
-  
-  let playerName = "Someone";
-  try {
-    // Portals pipe format: {"name1"="val1", "name2"="val2"}
-    // or could be plain text
-    if (msg && msg.includes && msg.includes("=")) {
-      const match = msg.match(/"([^"]+)"="([^"]+)"/);
-      if (match) playerName = match[2];
-    } else if (msg) {
-      playerName = String(msg).replace(/["{}\s]/g, "") || "Someone";
-    }
-  } catch(e) {
-    playerName = "Someone";
-  }
-
-  fetch(WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ playerName: playerName, roomName: "Test Room" })
-  }).catch(function(err) { console.error("Notify error:", err); });
-});
-
-// Fallback: if no message received in 5s, send anyway
-setTimeout(function() {
-  if (sent) return;
-  sent = true;
-  fetch(WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ playerName: "Someone", roomName: "Test Room" })
-  }).catch(function(err) { console.error("Notify error:", err); });
-}, 5000);
+fetch("https://portals-discord-notifier.bongiornomordo.workers.dev", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ playerName: "Someone", roomName: "Test Room" })
+}).then(function(r) { return r.json(); }).then(function(d) { console.log("notified", d); }).catch(function(e) { console.error("err", e); });
 </script>
 </body>
 </html>
