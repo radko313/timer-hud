@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body {
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+  #label {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    color: #aaaaaa;
+    text-shadow: 0 0 5px #666666;
+    text-align: center;
+    margin-bottom: 2px;
+  }
+  #timer {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: #ffcc00;
+    text-shadow:
+      0 0 7px #ffcc00,
+      0 0 15px #ffcc00,
+      0 0 30px #cc9900;
+    text-align: center;
+    line-height: 1;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .tick { animation: pulse 0.3s ease-out; }
+</style>
+</head>
+<body>
+  <div id="label">NEXT ROUND</div>
+  <div id="timer">0:15</div>
+
+  <script>
+    var timerEl = document.getElementById('timer');
+    var remaining = 15;
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    function format(s) { return Math.floor(s/60) + ':' + pad(s%60); }
+
+    setInterval(function() {
+      remaining--;
+      if (remaining <= 0) {
+        remaining = 0;
+        timerEl.textContent = 'GO!';
+        timerEl.style.color = '#00ff88';
+        timerEl.style.textShadow = '0 0 7px #00ff88, 0 0 15px #00ff88, 0 0 30px #00cc66';
+        return;
+      }
+      timerEl.textContent = format(remaining);
+      timerEl.classList.remove('tick');
+      void timerEl.offsetWidth;
+      timerEl.classList.add('tick');
+      if (remaining <= 5) {
+        timerEl.style.color = '#00ff88';
+        timerEl.style.textShadow = '0 0 7px #00ff88, 0 0 15px #00ff88, 0 0 30px #00cc66';
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
