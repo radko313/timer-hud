@@ -9,7 +9,7 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.85);
     overflow: hidden;
     font-family: 'Inter', sans-serif;
   }
@@ -23,25 +23,61 @@
     gap: 16px;
   }
 
-  /* Connect Wallet Button */
-  #connect-btn {
+  #title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #7c5cfc, #00d4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  #subtitle {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 16px;
+  }
+
+  /* Wallet Input */
+  #wallet-input {
+    width: 380px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    background: #16161e;
+    border: 1px solid #2a2a3e;
+    border-radius: 10px;
+    color: #e0e0e8;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #wallet-input:focus {
+    border-color: #7c5cfc;
+  }
+  #wallet-input::placeholder {
+    color: #444;
+  }
+
+  /* Check Button */
+  #check-btn {
     background: linear-gradient(135deg, #7c5cfc, #00d4ff);
     color: #fff;
     border: none;
-    padding: 16px 40px;
-    font-size: 18px;
+    padding: 14px 40px;
+    font-size: 16px;
     font-weight: 700;
     font-family: 'Inter', sans-serif;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     box-shadow: 0 4px 24px rgba(124, 92, 252, 0.4);
   }
-  #connect-btn:hover {
+  #check-btn:hover {
     transform: scale(1.05);
     box-shadow: 0 6px 32px rgba(124, 92, 252, 0.6);
   }
-  #connect-btn:disabled {
+  #check-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
@@ -53,6 +89,13 @@
     font-size: 14px;
     text-align: center;
     min-height: 20px;
+  }
+
+  #input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
 
   /* Tier Badge */
@@ -101,7 +144,6 @@
     font-size: 24px;
   }
 
-  /* Loading spinner */
   .spinner {
     width: 32px;
     height: 32px;
@@ -109,30 +151,23 @@
     border-top-color: #7c5cfc;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    margin: 0 auto;
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-
-  .fade-out {
-    animation: fadeOut 1s ease forwards;
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+  .fade-out { animation: fadeOut 1s ease forwards; }
 </style>
 </head>
 <body>
   <div id="container">
-    <button id="connect-btn">Verify Wallet</button>
+    <div id="title">PnL Gate</div>
+    <div id="subtitle">Paste your Solana wallet to check your trading tier</div>
+    <div id="input-group">
+      <input id="wallet-input" type="text" placeholder="Paste your Solana wallet address..." spellcheck="false" autocomplete="off" />
+      <button id="check-btn">Check PnL</button>
+    </div>
     <div id="status"></div>
     <div id="tier-badge">
       <div class="tier-name"></div>
@@ -143,67 +178,46 @@
 
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
-    // === CONFIG ===
     var WORKER_URL = 'https://portals-pnl-checker.portals-pnl.workers.dev';
 
-    var connectBtn = document.getElementById('connect-btn');
+    var walletInput = document.getElementById('wallet-input');
+    var checkBtn = document.getElementById('check-btn');
     var statusEl = document.getElementById('status');
     var tierBadge = document.getElementById('tier-badge');
+    var inputGroup = document.getElementById('input-group');
     var container = document.getElementById('container');
 
-    // Check if Phantom is available
-    function getProvider() {
-      if (window.solana && window.solana.isPhantom) return window.solana;
-      if (window.phantom && window.phantom.solana) return window.phantom.solana;
-      return null;
-    }
+    checkBtn.addEventListener('click', async function() {
+      var walletAddress = walletInput.value.trim();
 
-    connectBtn.addEventListener('click', async function() {
-      connectBtn.disabled = true;
-
-      var provider = getProvider();
-
-      if (!provider) {
-        statusEl.textContent = 'Phantom wallet not found. Please install Phantom.';
-        connectBtn.disabled = false;
+      if (!walletAddress || walletAddress.length < 32 || walletAddress.length > 44) {
+        statusEl.textContent = 'Please enter a valid Solana wallet address.';
         return;
       }
 
-      try {
-        // Connect wallet
-        statusEl.textContent = 'Connecting wallet...';
-        var resp = await provider.connect();
-        var walletAddress = resp.publicKey.toString();
-        statusEl.textContent = 'Wallet connected: ' + walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
+      checkBtn.disabled = true;
+      inputGroup.style.display = 'none';
+      statusEl.innerHTML = '<div class="spinner"></div><br>Checking your PnL...';
 
-        // Show loading
-        connectBtn.style.display = 'none';
-        statusEl.innerHTML = '<div class="spinner" style="margin: 0 auto;"></div><br>Checking your PnL...';
+      var result = await checkPnL(walletAddress);
 
-        // Call worker
-        var result = await checkPnL(walletAddress);
-
-        if (!result.ok) {
-          statusEl.textContent = 'Error: ' + (result.error || 'Unknown error');
-          connectBtn.style.display = 'block';
-          connectBtn.disabled = false;
-          return;
-        }
-
-        // Show tier result
-        showTier(result);
-
-        // Send task to Portals after brief display
-        setTimeout(function() {
-          sendTeleportTask(result.tier);
-          // Fade out
-          container.classList.add('fade-out');
-        }, 2500);
-
-      } catch (e) {
-        statusEl.textContent = 'Connection cancelled or failed.';
-        connectBtn.disabled = false;
+      if (!result.ok) {
+        statusEl.textContent = 'Error: ' + (result.error || 'Unknown error');
+        inputGroup.style.display = 'flex';
+        checkBtn.disabled = false;
+        return;
       }
+
+      showTier(result);
+
+      setTimeout(function() {
+        sendTeleportTask(result.tier);
+        container.classList.add('fade-out');
+      }, 2500);
+    });
+
+    walletInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkBtn.click();
     });
 
     async function checkPnL(walletAddress) {
@@ -263,25 +277,21 @@
           TaskTargetState: 'SetNotActiveToActive'
         }));
       } catch (e) {
-        // SDK not available (testing outside Portals)
         console.log('Would send task:', taskName);
       }
     }
 
-    // Listen for messages from Portals (e.g. "check_pnl" trigger)
+    // Listen for messages from Portals
     try {
       PortalsSdk.setMessageListener(function(msg) {
         if (msg === 'check_pnl') {
-          // Auto-trigger if wallet already connected
-          var provider = getProvider();
-          if (provider && provider.isConnected) {
-            connectBtn.click();
+          // If wallet already entered, auto-check
+          if (walletInput.value.trim().length >= 32) {
+            checkBtn.click();
           }
         }
       });
-    } catch (e) {
-      // SDK not available
-    }
+    } catch (e) {}
   </script>
 </body>
 </html>
