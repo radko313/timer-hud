@@ -254,6 +254,11 @@
       }
     }
 
+    /* Return keyboard focus to game immediately so player doesn't get stuck walking */
+    if (typeof PortalsSdk !== 'undefined') {
+      PortalsSdk.focusGameKeyboard();
+    }
+
     PortalsSdk.setMessageListener(function(message) {
       var msg = typeof message === 'string' ? message : JSON.stringify(message);
       dbg.textContent = 'recv: ' + msg;
