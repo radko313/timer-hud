@@ -57,75 +57,16 @@
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var killCountEl = document.getElementById('killCount');
-    var myName = '';
-    var prevKills = {};
-
-    function parsePortalsObj(str) {
-      var result = {};
-      if (!str) return result;
-      str = str.replace(/^\{|\}$/g, '').trim();
-      if (!str) return result;
-      var pairs = str.split(',');
-      for (var i = 0; i < pairs.length; i++) {
-        var pair = pairs[i].trim();
-        var eqIdx = pair.indexOf('=');
-        if (eqIdx > -1) {
-          var k = pair.substring(0, eqIdx).replace(/^"|"$/g, '').trim();
-          var v = pair.substring(eqIdx + 1).replace(/^"|"$/g, '').trim();
-          result[k] = v;
-        }
-      }
-      return result;
-    }
 
     PortalsSdk.setMessageListener(function(message) {
       var msg = typeof message === 'string' ? message : String(message);
 
       if (msg.indexOf('kills:') === 0) {
-        var rest = msg.substring(6);
-        var firstBrace = rest.indexOf('{');
-
-        if (firstBrace > -1) {
-          rest = rest.substring(firstBrace);
-          var splitIdx = rest.indexOf('}:{');
-          var killsMap;
-
-          if (splitIdx > -1) {
-            killsMap = parsePortalsObj(rest.substring(0, splitIdx + 1));
-          } else {
-            killsMap = parsePortalsObj(rest);
-          }
-
-          // Detect who "I" am: find which player's kills went UP
-          if (!myName) {
-            for (var name in killsMap) {
-              var newVal = parseInt(killsMap[name]) || 0;
-              var oldVal = parseInt(prevKills[name]) || 0;
-              if (newVal > oldVal) {
-                myName = name;
-                break;
-              }
-            }
-          }
-
-          // Store for next comparison
-          prevKills = {};
-          for (var k in killsMap) {
-            prevKills[k] = killsMap[k];
-          }
-
-          // Display my kills
-          if (myName && killsMap[myName] !== undefined) {
-            killCountEl.textContent = killsMap[myName];
-          } else {
-            // Fallback: show 0 until we detect who we are
-            killCountEl.textContent = '0';
-          }
-
-          killCountEl.classList.remove('pop');
-          void killCountEl.offsetWidth;
-          killCountEl.classList.add('pop');
-        }
+        var count = msg.substring(6).trim();
+        killCountEl.textContent = count;
+        killCountEl.classList.remove('pop');
+        void killCountEl.offsetWidth;
+        killCountEl.classList.add('pop');
       }
     });
   </script>
