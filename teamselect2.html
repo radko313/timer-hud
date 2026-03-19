@@ -199,7 +199,7 @@
       document.getElementById('status').classList.add('pulsing');
 
       /* Send team choice — sets player's team variable */
-      var teamTask = selectedTeam === 'red' ? 'JoinRed' : 'JoinBlue';
+      var teamTask = selectedTeam === 'red' ? 'joinRed' : 'joinBlue';
       var teamMsg = JSON.stringify({
         TaskName: teamTask,
         TaskTargetState: 'SetAnyToActive'
