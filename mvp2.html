@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body {
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    font-family: Arial, sans-serif;
+  }
+  #overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.8s;
+  }
+  #overlay.show { opacity: 1; }
+  #overlay.hide { opacity: 0; }
+  .title {
+    font-size: 14px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+  }
+  .mvp-label {
+    font-size: 48px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,215,0,0.3);
+    margin-bottom: 16px;
+  }
+  .player-name {
+    font-size: 36px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 15px rgba(255,255,255,0.4);
+    margin-bottom: 12px;
+  }
+  .kills-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .kills-num {
+    font-size: 42px;
+    font-weight: 900;
+    color: #ff3333;
+    text-shadow: 0 0 10px rgba(255,51,51,0.5);
+  }
+  .kills-label {
+    font-size: 16px;
+    color: #ff6666;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .divider {
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ffd700, transparent);
+    margin: 16px 0;
+  }
+  .scoreboard { margin-top: 20px; text-align: center; }
+  .scoreboard-title {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .score-entry { font-size: 16px; color: #aaa; margin: 4px 0; }
+  .score-entry.mvp-entry { color: #ffd700; }
+  .score-name { margin-right: 12px; }
+  .score-kills { color: #ff6666; font-weight: 900; }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .animate-in { animation: slideUp 0.6s ease-out forwards; }
+  #loading {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #666;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div id="loading">Loading results...</div>
+  <div id="overlay">
+    <div class="title">ROUND OVER</div>
+    <div class="divider"></div>
+    <div class="mvp-label animate-in">MVP</div>
+    <div class="player-name animate-in" id="mvpName"></div>
+    <div class="kills-row animate-in">
+      <div class="kills-num" id="mvpKills">0</div>
+      <div class="kills-label">kills</div>
+    </div>
+    <div class="divider"></div>
+    <div class="scoreboard" id="scoreboard">
+      <div class="scoreboard-title">Scoreboard</div>
+    </div>
+  </div>
+
+  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
+  <script>
+    var players = {};
+    var revealed = false;
+    var revealTimer = null;
+
+    function parsePortalsObj(str) {
+      var result = {};
+      if (!str) return result;
+      str = str.replace(/^\{|\}$/g, '').trim();
+      if (!str) return result;
+      var pairs = str.split(',');
+      for (var i = 0; i < pairs.length; i++) {
+        var pair = pairs[i].trim();
+        var eqIdx = pair.indexOf('=');
+        if (eqIdx > -1) {
+          var k = pair.substring(0, eqIdx).replace(/^"|"$/g, '').trim();
+          var v = pair.substring(eqIdx + 1).replace(/^"|"$/g, '').trim();
+          result[k] = v;
+        }
+      }
+      return result;
+    }
+
+    function revealMVP() {
+      if (revealed) return;
+      revealed = true;
+      document.getElementById('loading').style.display = 'none';
+      var overlay = document.getElementById('overlay');
+      var mvpNameEl = document.getElementById('mvpName');
+      var mvpKillsEl = document.getElementById('mvpKills');
+      var scoreboard = document.getElementById('scoreboard');
+
+      var mvpName = '';
+      var mvpKills = -1;
+      for (var name in players) {
+        var k = parseInt(players[name]) || 0;
+        if (k > mvpKills) {
+          mvpKills = k;
+          mvpName = name;
+        }
+      }
+      if (mvpKills < 0) mvpKills = 0;
+
+      mvpNameEl.textContent = mvpName || '?';
+      mvpKillsEl.textContent = mvpKills;
+
+      var sorted = [];
+      for (var name in players) {
+        sorted.push({ name: name, kills: parseInt(players[name]) || 0 });
+      }
+      sorted.sort(function(a, b) { return b.kills - a.kills; });
+
+      for (var i = 0; i < sorted.length; i++) {
+        var e = sorted[i];
+        var entry = document.createElement('div');
+        entry.className = 'score-entry' + (e.name === mvpName ? ' mvp-entry' : '');
+        entry.innerHTML = '<span class="score-name">' + e.name + '</span><span class="score-kills">' + e.kills + ' kills</span>';
+        scoreboard.appendChild(entry);
+      }
+
+      overlay.classList.add('show');
+
+      setTimeout(function() {
+        overlay.classList.remove('show');
+        overlay.classList.add('hide');
+      }, 5000);
+    }
+
+    if (typeof PortalsSdk !== 'undefined') {
+      PortalsSdk.setMessageListener(function(message) {
+        var msg = typeof message === 'string' ? message : String(message);
+
+        // New format from JS: "mvp:PlayerName:kills"
+        if (msg.indexOf('mvp:') === 0) {
+          var parts = msg.substring(4).split(':');
+          if (parts.length >= 2) {
+            var name = parts[0];
+            var kills = parts[1];
+            players[name] = kills;
+          }
+          if (revealTimer) clearTimeout(revealTimer);
+          revealTimer = setTimeout(revealMVP, 1500);
+        }
+
+        // Also support old pipe variable format for backwards compat
+        if (msg.indexOf('mvpdata:') === 0 || msg.indexOf('{') === 0) {
+          var rest = msg.indexOf('mvpdata:') === 0 ? msg.substring(8) : msg;
+          var firstBrace = rest.indexOf('{');
+          if (firstBrace > -1) {
+            rest = rest.substring(firstBrace);
+            var killsMap = parsePortalsObj(rest);
+            for (var k in killsMap) {
+              players[k] = killsMap[k];
+            }
+          }
+          if (revealTimer) clearTimeout(revealTimer);
+          revealTimer = setTimeout(revealMVP, 1500);
+        }
+      });
+    }
+
+    setTimeout(function() { revealMVP(); }, 8000);
+  </script>
+</body>
+</html>
