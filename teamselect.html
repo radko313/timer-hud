@@ -176,7 +176,6 @@
       for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
       document.querySelector('.team-btn.' + team).classList.add('selected');
       document.getElementById('readyBtn').disabled = false;
-      PortalsSdk.sendMessage('team:' + team);
     }
 
     function goReady() {
@@ -189,7 +188,11 @@
       document.getElementById('readyBtn').style.background = 'rgba(0,255,136,0.15)';
       document.getElementById('status').textContent = 'Waiting for round...';
       document.getElementById('status').classList.add('pulsing');
-      PortalsSdk.sendMessage('ready:' + selectedTeam);
+      /* Tell Portals: set RoundCountdown to Active (starts the 20s countdown) */
+      PortalsSdk.sendMessageToUnity(JSON.stringify({
+        TaskName: '0_RoundCountdown',
+        TaskTargetState: 'SetNotActiveToActive'
+      }));
     }
 
     function showCountdown(secs) {
@@ -234,10 +237,10 @@
     PortalsSdk.setMessageListener(function(message) {
       var msg = typeof message === 'string' ? message : JSON.stringify(message);
       if (msg.indexOf('countdown:') === 0) {
-        var secs = parseInt(msg.substring(10));
+        var secs = Number(msg.substring(10));
         if (!isNaN(secs)) showCountdown(secs);
       } else if (msg === 'roundstart') {
-        /* iframe will close — no action needed */
+        /* iframe will close */
       } else if (msg === 'waiting') {
         showWaiting();
       } else if (msg === 'reset') {
@@ -252,7 +255,6 @@
         if (countdownTimer) clearInterval(countdownTimer);
         showPick();
       } else if (msg === 'autoready') {
-        /* returning player — auto-ready with previous team */
         isReady = true;
         document.getElementById('readyBtn').disabled = true;
         document.getElementById('readyBtn').textContent = 'READY!';
