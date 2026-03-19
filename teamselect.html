@@ -135,6 +135,13 @@
     50% { opacity: 0.5; }
   }
   .pulsing { animation: pulse 1.5s ease-in-out infinite; }
+  #debug {
+    position: fixed;
+    bottom: 5px;
+    left: 5px;
+    font-size: 9px;
+    color: #444;
+  }
 </style>
 </head>
 <body>
@@ -161,6 +168,7 @@
       <div style="color:#666;font-size:12px;margin-top:10px;">You'll join the next round</div>
     </div>
   </div>
+  <div id="debug"></div>
 
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
@@ -168,6 +176,7 @@
     var isReady = false;
     var countdownTimer = null;
     var countdownVal = 0;
+    var dbg = document.getElementById('debug');
 
     function pickTeam(team) {
       if (isReady) return;
@@ -188,11 +197,14 @@
       document.getElementById('readyBtn').style.background = 'rgba(0,255,136,0.15)';
       document.getElementById('status').textContent = 'Waiting for round...';
       document.getElementById('status').classList.add('pulsing');
-      /* Tell Portals: set RoundCountdown to Active (starts the 20s countdown) */
-      PortalsSdk.sendMessageToUnity(JSON.stringify({
+
+      /* Tell Portals to start the countdown */
+      var msg = JSON.stringify({
         TaskName: '0_RoundCountdown',
-        TaskTargetState: 'SetNotActiveToActive'
-      }));
+        TaskTargetState: 'SetAnyToActive'
+      });
+      dbg.textContent = 'sent: ' + msg;
+      PortalsSdk.sendMessageToUnity(msg);
     }
 
     function showCountdown(secs) {
@@ -236,6 +248,7 @@
 
     PortalsSdk.setMessageListener(function(message) {
       var msg = typeof message === 'string' ? message : JSON.stringify(message);
+      dbg.textContent = 'recv: ' + msg;
       if (msg.indexOf('countdown:') === 0) {
         var secs = Number(msg.substring(10));
         if (!isNaN(secs)) showCountdown(secs);
