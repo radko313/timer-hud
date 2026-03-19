@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: rgba(0,0,0,0.85);
+    overflow: hidden;
+    font-family: 'Arial Black', Arial, sans-serif;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #container {
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+  }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  }
+  .subtitle {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+  .teams {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .team-btn {
+    flex: 1;
+    max-width: 150px;
+    padding: 16px 10px;
+    border: 2px solid #333;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .team-btn:hover {
+    transform: translateY(-2px);
+  }
+  .team-btn.red { border-color: #ff3333; }
+  .team-btn.red:hover, .team-btn.red.selected {
+    background: rgba(255,51,51,0.2);
+    box-shadow: 0 0 20px rgba(255,51,51,0.3);
+  }
+  .team-btn.blue { border-color: #3388ff; }
+  .team-btn.blue:hover, .team-btn.blue.selected {
+    background: rgba(51,136,255,0.2);
+    box-shadow: 0 0 20px rgba(51,136,255,0.3);
+  }
+  .team-btn .icon { font-size: 28px; margin-bottom: 6px; }
+  .team-btn .name {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .team-btn.red .name { color: #ff3333; }
+  .team-btn.blue .name { color: #3388ff; }
+
+  #readyBtn {
+    width: 80%;
+    max-width: 280px;
+    padding: 16px;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0,255,136,0.1);
+    color: #00ff88;
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-shadow: 0 0 10px rgba(0,255,136,0.5);
+  }
+  #readyBtn:hover {
+    background: rgba(0,255,136,0.2);
+    box-shadow: 0 0 25px rgba(0,255,136,0.4);
+    transform: translateY(-2px);
+  }
+  #readyBtn:disabled {
+    border-color: #555;
+    color: #555;
+    background: rgba(255,255,255,0.02);
+    cursor: default;
+    text-shadow: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  #status {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #888;
+    letter-spacing: 1px;
+  }
+  #countdown {
+    font-size: 36px;
+    font-weight: 900;
+    color: #ffcc00;
+    text-shadow: 0 0 10px #ffcc00, 0 0 25px rgba(255,204,0,0.5);
+    margin-top: 10px;
+    display: none;
+  }
+  .waiting-msg {
+    font-size: 16px;
+    color: #ff6666;
+    text-shadow: 0 0 8px rgba(255,102,102,0.4);
+    letter-spacing: 1px;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .pulsing { animation: pulse 1.5s ease-in-out infinite; }
+</style>
+</head>
+<body>
+  <div id="container">
+    <div id="pickPhase">
+      <h1>Choose Team</h1>
+      <div class="subtitle">Pick a side and ready up</div>
+      <div class="teams">
+        <div class="team-btn red" onclick="pickTeam('red')">
+          <div class="icon">&#9876;</div>
+          <div class="name">Red</div>
+        </div>
+        <div class="team-btn blue" onclick="pickTeam('blue')">
+          <div class="icon">&#9876;</div>
+          <div class="name">Blue</div>
+        </div>
+      </div>
+      <button id="readyBtn" disabled onclick="goReady()">Ready</button>
+      <div id="status"></div>
+      <div id="countdown"></div>
+    </div>
+    <div id="waitPhase" style="display:none;">
+      <div class="waiting-msg pulsing">ROUND IN PROGRESS</div>
+      <div style="color:#666;font-size:12px;margin-top:10px;">You'll join the next round</div>
+    </div>
+  </div>
+
+  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
+  <script>
+    var selectedTeam = '';
+    var isReady = false;
+    var countdownTimer = null;
+    var countdownVal = 0;
+
+    function pickTeam(team) {
+      if (isReady) return;
+      selectedTeam = team;
+      var btns = document.querySelectorAll('.team-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
+      document.querySelector('.team-btn.' + team).classList.add('selected');
+      document.getElementById('readyBtn').disabled = false;
+      PortalsSdk.sendMessage('team:' + team);
+    }
+
+    function goReady() {
+      if (!selectedTeam || isReady) return;
+      isReady = true;
+      document.getElementById('readyBtn').disabled = true;
+      document.getElementById('readyBtn').textContent = 'READY!';
+      document.getElementById('readyBtn').style.borderColor = '#00ff88';
+      document.getElementById('readyBtn').style.color = '#00ff88';
+      document.getElementById('readyBtn').style.background = 'rgba(0,255,136,0.15)';
+      document.getElementById('status').textContent = 'Waiting for round...';
+      document.getElementById('status').classList.add('pulsing');
+      PortalsSdk.sendMessage('ready:' + selectedTeam);
+    }
+
+    function showCountdown(secs) {
+      var el = document.getElementById('countdown');
+      el.style.display = 'block';
+      countdownVal = secs;
+      el.textContent = countdownVal;
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(function() {
+        countdownVal--;
+        if (countdownVal <= 0) {
+          clearInterval(countdownTimer);
+          el.textContent = 'GO!';
+          el.style.color = '#00ff88';
+          el.style.textShadow = '0 0 10px #00ff88, 0 0 25px rgba(0,255,136,0.5)';
+        } else {
+          el.textContent = countdownVal;
+          if (countdownVal <= 5) {
+            el.style.color = '#ff3333';
+            el.style.textShadow = '0 0 10px #ff3333, 0 0 25px rgba(255,51,51,0.5)';
+          }
+        }
+      }, 1000);
+    }
+
+    function showWaiting() {
+      document.getElementById('pickPhase').style.display = 'none';
+      document.getElementById('waitPhase').style.display = 'block';
+    }
+
+    function showPick() {
+      document.getElementById('pickPhase').style.display = 'block';
+      document.getElementById('waitPhase').style.display = 'none';
+      if (!isReady) {
+        document.getElementById('readyBtn').disabled = !selectedTeam;
+        document.getElementById('readyBtn').textContent = 'READY';
+        document.getElementById('status').textContent = '';
+        document.getElementById('status').classList.remove('pulsing');
+      }
+    }
+
+    PortalsSdk.setMessageListener(function(message) {
+      var msg = typeof message === 'string' ? message : JSON.stringify(message);
+      if (msg.indexOf('countdown:') === 0) {
+        var secs = parseInt(msg.substring(10));
+        if (!isNaN(secs)) showCountdown(secs);
+      } else if (msg === 'roundstart') {
+        /* iframe will close — no action needed */
+      } else if (msg === 'waiting') {
+        showWaiting();
+      } else if (msg === 'reset') {
+        isReady = false;
+        selectedTeam = '';
+        var btns = document.querySelectorAll('.team-btn');
+        for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
+        document.getElementById('readyBtn').disabled = true;
+        document.getElementById('readyBtn').textContent = 'READY';
+        document.getElementById('readyBtn').style.borderColor = '#00ff88';
+        document.getElementById('countdown').style.display = 'none';
+        if (countdownTimer) clearInterval(countdownTimer);
+        showPick();
+      } else if (msg === 'autoready') {
+        /* returning player — auto-ready with previous team */
+        isReady = true;
+        document.getElementById('readyBtn').disabled = true;
+        document.getElementById('readyBtn').textContent = 'READY!';
+        document.getElementById('status').textContent = 'Auto-readied for next round';
+        document.getElementById('status').classList.add('pulsing');
+      }
+    });
+  </script>
+</body>
+</html>
