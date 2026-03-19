@@ -213,6 +213,11 @@
         TaskTargetState: 'SetAnyToActive'
       });
       PortalsSdk.sendMessageToUnity(cdMsg);
+
+      /* Close iframe after short delay so messages have time to send */
+      setTimeout(function() {
+        PortalsSdk.closeIframe();
+      }, 500);
     }
 
     function showCountdown(secs) {
