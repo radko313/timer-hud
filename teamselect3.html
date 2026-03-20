@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+  html, body {
+    margin: 0; padding: 0;
+    background: transparent;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #panel {
+    background: radial-gradient(ellipse at top, rgba(15,15,30,0.95), rgba(8,8,18,0.97));
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 32px 28px 28px;
+    width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 80px rgba(100,100,255,0.04), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  #panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(100,150,255,0.5), transparent);
+  }
+
+  .title {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 11px;
+    font-weight: 400;
+    text-align: center;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 1px;
+    margin-bottom: 28px;
+  }
+
+  .teams {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .team-btn {
+    flex: 1;
+    padding: 18px 8px 14px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .team-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+    border-radius: 12px;
+  }
+  .team-btn:hover { transform: translateY(-3px); }
+  .team-btn:active { transform: translateY(-1px); }
+
+  .team-btn.red::before { background: radial-gradient(ellipse at center, rgba(255,60,60,0.15), transparent 70%); }
+  .team-btn.blue::before { background: radial-gradient(ellipse at center, rgba(60,120,255,0.15), transparent 70%); }
+  .team-btn.random::before { background: radial-gradient(ellipse at center, rgba(160,80,255,0.15), transparent 70%); }
+
+  .team-btn:hover::before, .team-btn.selected::before { opacity: 1; }
+
+  .team-btn.red:hover, .team-btn.red.selected {
+    border-color: rgba(255,70,70,0.5);
+    box-shadow: 0 4px 20px rgba(255,60,60,0.15), 0 0 0 1px rgba(255,60,60,0.1);
+  }
+  .team-btn.blue:hover, .team-btn.blue.selected {
+    border-color: rgba(70,130,255,0.5);
+    box-shadow: 0 4px 20px rgba(60,120,255,0.15), 0 0 0 1px rgba(60,120,255,0.1);
+  }
+  .team-btn.random:hover, .team-btn.random.selected {
+    border-color: rgba(160,90,255,0.5);
+    box-shadow: 0 4px 20px rgba(150,80,255,0.15), 0 0 0 1px rgba(150,80,255,0.1);
+  }
+
+  .team-icon {
+    font-size: 26px;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .team-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    position: relative;
+    z-index: 1;
+  }
+  .team-btn.red .team-label { color: #ff5555; }
+  .team-btn.blue .team-label { color: #5599ff; }
+  .team-btn.random .team-label { color: #b080ff; }
+
+  .team-btn.selected .team-icon { animation: iconPop 0.3s ease; }
+  @keyframes iconPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    margin-bottom: 22px;
+  }
+
+  #readyBtn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    color: rgba(255,255,255,0.2);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    cursor: default;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  #readyBtn.enabled {
+    border-color: rgba(0,230,120,0.4);
+    color: #00e878;
+    background: rgba(0,230,120,0.06);
+    cursor: pointer;
+    text-shadow: 0 0 20px rgba(0,230,120,0.3);
+  }
+  #readyBtn.enabled:hover {
+    background: rgba(0,230,120,0.12);
+    box-shadow: 0 4px 24px rgba(0,230,120,0.2), 0 0 0 1px rgba(0,230,120,0.15);
+    transform: translateY(-2px);
+  }
+  #readyBtn.enabled:active { transform: translateY(0); }
+
+  #readyBtn.confirmed {
+    border-color: rgba(0,230,120,0.5);
+    color: #00e878;
+    background: rgba(0,230,120,0.1);
+    cursor: default;
+    box-shadow: 0 0 30px rgba(0,230,120,0.15);
+  }
+
+  #status {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 1px;
+    min-height: 16px;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .pulsing { animation: pulse 2s ease-in-out infinite; }
+
+  .checkmark {
+    display: inline-block;
+    margin-right: 6px;
+    animation: checkIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes checkIn {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <div id="panel">
+    <div class="title">Choose Your Team</div>
+    <div class="subtitle">Select a side and ready up</div>
+
+    <div class="teams">
+      <div class="team-btn red" onclick="pickTeam('red')">
+        <div class="team-icon">&#9876;</div>
+        <div class="team-label">Red</div>
+      </div>
+      <div class="team-btn random" onclick="pickTeam('random')">
+        <div class="team-icon">&#10022;</div>
+        <div class="team-label">Auto</div>
+      </div>
+      <div class="team-btn blue" onclick="pickTeam('blue')">
+        <div class="team-icon">&#9876;</div>
+        <div class="team-label">Blue</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <button id="readyBtn" onclick="goReady()">Select a team</button>
+    <div id="status"></div>
+  </div>
+
+  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
+  <script>
+    var selectedTeam = '';
+    var isReady = false;
+
+    function pickTeam(team) {
+      if (isReady) return;
+      selectedTeam = team;
+      var btns = document.querySelectorAll('.team-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
+      document.querySelector('.team-btn.' + team).classList.add('selected');
+      var btn = document.getElementById('readyBtn');
+      btn.textContent = 'Ready';
+      btn.className = 'enabled';
+    }
+
+    function goReady() {
+      if (!selectedTeam || isReady) return;
+      isReady = true;
+      var btn = document.getElementById('readyBtn');
+      btn.className = 'confirmed';
+      btn.innerHTML = '<span class="checkmark">&#10003;</span>Ready';
+      document.getElementById('status').textContent = 'Waiting for match to start\u2026';
+      document.getElementById('status').classList.add('pulsing');
+
+      var taskMap = { red: 'joinRed', blue: 'joinBlue', random: 'joinRandom' };
+      PortalsSdk.sendMessageToUnity(JSON.stringify({
+        TaskName: taskMap[selectedTeam],
+        TaskTargetState: 'SetAnyToActive'
+      }));
+
+      setTimeout(function() { PortalsSdk.closeIframe(); }, 600);
+    }
+
+    if (typeof PortalsSdk !== 'undefined') {
+      PortalsSdk.focusGameKeyboard();
+    }
+  </script>
+</body>
+</html>
