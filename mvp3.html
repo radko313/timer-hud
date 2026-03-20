@@ -140,6 +140,7 @@
   <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
   <script>
     var players = {};
+    var teams = {};
     var revealed = false;
     var revealTimer = null;
 
@@ -170,10 +171,19 @@
       var mvpKillsEl = document.getElementById('mvpKills');
       var scoreboard = document.getElementById('scoreboard');
 
+      // Filter out players with no team (team = 0 or not set)
+      var activePlayers = {};
+      for (var name in players) {
+        var t = parseInt(teams[name]) || 0;
+        if (t > 0) {
+          activePlayers[name] = players[name];
+        }
+      }
+
       var mvpName = '';
       var mvpKills = -1;
-      for (var name in players) {
-        var k = parseInt(players[name]) || 0;
+      for (var name in activePlayers) {
+        var k = parseInt(activePlayers[name]) || 0;
         if (k > mvpKills) {
           mvpKills = k;
           mvpName = name;
@@ -185,8 +195,8 @@
       mvpKillsEl.textContent = mvpKills;
 
       var sorted = [];
-      for (var name in players) {
-        sorted.push({ name: name, kills: parseInt(players[name]) || 0 });
+      for (var name in activePlayers) {
+        sorted.push({ name: name, kills: parseInt(activePlayers[name]) || 0 });
       }
       sorted.sort(function(a, b) { return b.kills - a.kills; });
 
@@ -216,28 +226,31 @@
       PortalsSdk.setMessageListener(function(message) {
         var msg = typeof message === 'string' ? message : String(message);
 
-        if (msg.indexOf('mvp:') === 0) {
-          var parts = msg.substring(4).split(':');
-          if (parts.length >= 2) {
-            players[parts[0]] = parts[1];
-          }
-          if (revealTimer) clearTimeout(revealTimer);
-          revealTimer = setTimeout(revealMVP, 1500);
+        // Format: "kills:{p1=v1,p2=v2},teams:{p1=t1,p2=t2}"
+        var killsMatch = msg.match(/kills:\{([^}]*)\}/);
+        var teamsMatch = msg.match(/teams:\{([^}]*)\}/);
+
+        if (killsMatch) {
+          var killsMap = parsePortalsObj('{' + killsMatch[1] + '}');
+          for (var k in killsMap) { players[k] = killsMap[k]; }
+        }
+        if (teamsMatch) {
+          var teamsMap = parsePortalsObj('{' + teamsMatch[1] + '}');
+          for (var k in teamsMap) { teams[k] = teamsMap[k]; }
         }
 
-        if (msg.indexOf('mvpdata:') === 0 || msg.indexOf('{') === 0) {
-          var rest = msg.indexOf('mvpdata:') === 0 ? msg.substring(8) : msg;
-          var firstBrace = rest.indexOf('{');
-          if (firstBrace > -1) {
-            rest = rest.substring(firstBrace);
-            var killsMap = parsePortalsObj(rest);
-            for (var k in killsMap) {
-              players[k] = killsMap[k];
-            }
-          }
-          if (revealTimer) clearTimeout(revealTimer);
-          revealTimer = setTimeout(revealMVP, 1500);
+        // Also support old formats
+        if (msg.indexOf('mvp:') === 0) {
+          var parts = msg.substring(4).split(':');
+          if (parts.length >= 2) { players[parts[0]] = parts[1]; }
         }
+        if (!killsMatch && !teamsMatch && msg.indexOf('{') === 0) {
+          var killsMap = parsePortalsObj(msg);
+          for (var k in killsMap) { players[k] = killsMap[k]; }
+        }
+
+        if (revealTimer) clearTimeout(revealTimer);
+        revealTimer = setTimeout(revealMVP, 1500);
       });
     }
 
