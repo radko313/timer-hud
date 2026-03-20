@@ -21,7 +21,7 @@
   #container {
     text-align: center;
     width: 100%;
-    max-width: 400px;
+    max-width: 450px;
     padding: 20px;
   }
   h1 {
@@ -40,13 +40,13 @@
   }
   .teams {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     justify-content: center;
     margin-bottom: 24px;
   }
   .team-btn {
     flex: 1;
-    max-width: 150px;
+    max-width: 130px;
     padding: 16px 10px;
     border: 2px solid #333;
     border-radius: 10px;
@@ -68,6 +68,11 @@
     background: rgba(51,136,255,0.2);
     box-shadow: 0 0 20px rgba(51,136,255,0.3);
   }
+  .team-btn.random { border-color: #aa55ff; }
+  .team-btn.random:hover, .team-btn.random.selected {
+    background: rgba(170,85,255,0.2);
+    box-shadow: 0 0 20px rgba(170,85,255,0.3);
+  }
   .team-btn .icon { font-size: 28px; margin-bottom: 6px; }
   .team-btn .name {
     font-size: 14px;
@@ -77,6 +82,7 @@
   }
   .team-btn.red .name { color: #ff3333; }
   .team-btn.blue .name { color: #3388ff; }
+  .team-btn.random .name { color: #aa55ff; }
 
   #readyBtn {
     width: 80%;
@@ -116,20 +122,6 @@
     color: #888;
     letter-spacing: 1px;
   }
-  #countdown {
-    font-size: 36px;
-    font-weight: 900;
-    color: #ffcc00;
-    text-shadow: 0 0 10px #ffcc00, 0 0 25px rgba(255,204,0,0.5);
-    margin-top: 10px;
-    display: none;
-  }
-  .waiting-msg {
-    font-size: 16px;
-    color: #ff6666;
-    text-shadow: 0 0 8px rgba(255,102,102,0.4);
-    letter-spacing: 1px;
-  }
   @keyframes pulse {
     0%,100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -154,6 +146,10 @@
           <div class="icon">&#9876;</div>
           <div class="name">Red</div>
         </div>
+        <div class="team-btn random" onclick="pickTeam('random')">
+          <div class="icon">&#9733;</div>
+          <div class="name">Random</div>
+        </div>
         <div class="team-btn blue" onclick="pickTeam('blue')">
           <div class="icon">&#9876;</div>
           <div class="name">Blue</div>
@@ -161,11 +157,6 @@
       </div>
       <button id="readyBtn" disabled onclick="goReady()">Ready</button>
       <div id="status"></div>
-      <div id="countdown"></div>
-    </div>
-    <div id="waitPhase" style="display:none;">
-      <div class="waiting-msg pulsing">ROUND IN PROGRESS</div>
-      <div style="color:#666;font-size:12px;margin-top:10px;">You'll join the next round</div>
     </div>
   </div>
   <div id="debug"></div>
@@ -174,8 +165,6 @@
   <script>
     var selectedTeam = '';
     var isReady = false;
-    var countdownTimer = null;
-    var countdownVal = 0;
     var dbg = document.getElementById('debug');
 
     function pickTeam(team) {
@@ -195,11 +184,11 @@
       document.getElementById('readyBtn').style.borderColor = '#00ff88';
       document.getElementById('readyBtn').style.color = '#00ff88';
       document.getElementById('readyBtn').style.background = 'rgba(0,255,136,0.15)';
-      document.getElementById('status').textContent = 'Waiting for round...';
+      document.getElementById('status').textContent = 'Waiting for others...';
       document.getElementById('status').classList.add('pulsing');
 
-      /* Send team choice — sets player's team variable */
-      var teamTask = selectedTeam === 'red' ? 'joinRed' : 'joinBlue';
+      var taskMap = { red: 'joinRed', blue: 'joinBlue', random: 'joinRandom' };
+      var teamTask = taskMap[selectedTeam];
       var teamMsg = JSON.stringify({
         TaskName: teamTask,
         TaskTargetState: 'SetAnyToActive'
@@ -207,85 +196,14 @@
       dbg.textContent = 'sent: ' + teamTask;
       PortalsSdk.sendMessageToUnity(teamMsg);
 
-      /* Close iframe after short delay so messages have time to send */
       setTimeout(function() {
         PortalsSdk.closeIframe();
       }, 500);
     }
 
-    function showCountdown(secs) {
-      var el = document.getElementById('countdown');
-      el.style.display = 'block';
-      countdownVal = secs;
-      el.textContent = countdownVal;
-      if (countdownTimer) clearInterval(countdownTimer);
-      countdownTimer = setInterval(function() {
-        countdownVal--;
-        if (countdownVal <= 0) {
-          clearInterval(countdownTimer);
-          el.textContent = 'GO!';
-          el.style.color = '#00ff88';
-          el.style.textShadow = '0 0 10px #00ff88, 0 0 25px rgba(0,255,136,0.5)';
-        } else {
-          el.textContent = countdownVal;
-          if (countdownVal <= 5) {
-            el.style.color = '#ff3333';
-            el.style.textShadow = '0 0 10px #ff3333, 0 0 25px rgba(255,51,51,0.5)';
-          }
-        }
-      }, 1000);
-    }
-
-    function showWaiting() {
-      document.getElementById('pickPhase').style.display = 'none';
-      document.getElementById('waitPhase').style.display = 'block';
-    }
-
-    function showPick() {
-      document.getElementById('pickPhase').style.display = 'block';
-      document.getElementById('waitPhase').style.display = 'none';
-      if (!isReady) {
-        document.getElementById('readyBtn').disabled = !selectedTeam;
-        document.getElementById('readyBtn').textContent = 'READY';
-        document.getElementById('status').textContent = '';
-        document.getElementById('status').classList.remove('pulsing');
-      }
-    }
-
-    /* Return keyboard focus to game immediately so player doesn't get stuck walking */
     if (typeof PortalsSdk !== 'undefined') {
       PortalsSdk.focusGameKeyboard();
     }
-
-    PortalsSdk.setMessageListener(function(message) {
-      var msg = typeof message === 'string' ? message : JSON.stringify(message);
-      dbg.textContent = 'recv: ' + msg;
-      if (msg.indexOf('countdown:') === 0) {
-        var secs = Number(msg.substring(10));
-        if (!isNaN(secs)) showCountdown(secs);
-      } else if (msg === 'roundstart') {
-        /* iframe will close */
-      } else if (msg === 'waiting') {
-        showWaiting();
-      } else if (msg === 'reset') {
-        isReady = false;
-        selectedTeam = '';
-        var btns = document.querySelectorAll('.team-btn');
-        for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
-        document.getElementById('readyBtn').disabled = true;
-        document.getElementById('readyBtn').textContent = 'READY';
-        document.getElementById('readyBtn').style.borderColor = '#00ff88';
-        document.getElementById('countdown').style.display = 'none';
-        if (countdownTimer) clearInterval(countdownTimer);
-        showPick();
-      } else if (msg === 'autoready') {
-        isReady = true;
-        document.getElementById('readyBtn').disabled = true;
-        document.getElementById('readyBtn').textContent = 'READY!';
-        document.getElementById('status').textContent = 'Auto-readied for next round';
-        document.getElementById('status').classList.add('pulsing');
-      }
-    });
   </script>
 </body>
 </html>
